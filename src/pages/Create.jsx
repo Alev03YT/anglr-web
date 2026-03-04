@@ -5,7 +5,6 @@ import { supabase } from '../lib/supabase.js'
 import { safeLower } from '../lib/format.js'
 
 export default function Create(){
-  // lo teniamo perché magari ti serve altrove nell’UI, ma per publish usiamo auth.getUser()
   const { user } = useAuth()
 
   const [file, setFile] = useState(null)
@@ -35,7 +34,7 @@ export default function Create(){
   async function publish(){
     if(!ok) return alert('Mancano campi obbligatori: foto, specie, tecnica.')
 
-    // ✅ PRENDO L’UTENTE “VERO” DA SUPABASE AUTH
+    // prendi utente reale da Supabase Auth
     const { data: authRes, error: authErr } = await supabase.auth.getUser()
     if(authErr) return alert(authErr.message)
     const authUser = authRes?.user
@@ -45,21 +44,47 @@ export default function Create(){
     let postId = null
 
     try{
-      // ✅ user_id = authUser.id (UUID valido per la FK)
+      // ✅ FIX DEFINITIVO: assicurati che esista profiles(id = auth.uid())
+      // (se la FK dei posts punta a profiles, così non fallisce)
+      const baseUsername =
+        (authUser.email ? authUser.email.split('@')[0] : null) ||
+        (user?.email ? user.email.split('@')[0] : null) ||
+        `angler_${authUser.id.slice(0,6)}`
+
+      const { error: profErr } = await supabase
+        .from('profiles')
+        .upsert(
+          {
+            id: authUser.id,
+            username: baseUsername,
+            display_name: baseUsername,
+            avatar_url: null,
+            bio: null,
+          },
+          { onConflict: 'id' }
+        )
+
+      if(profErr) throw profErr
+
+      // Crea post
       const { data: postData, error: e1 } = await supabase
         .from('posts')
-        .insert({ user_id: authUser.id, caption: caption.trim(), visibility: 'public' })
+        .insert({
+          user_id: authUser.id,
+          caption: caption.trim(),
+          visibility: 'public'
+        })
         .select('id')
         .single()
 
       if(e1) throw e1
       postId = postData.id
 
+      // Upload media
       const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()
       const path = `media/${authUser.id}/${postId}/${Date.now()}.${ext}`
 
-      const { error: upErr } = await supabase
-        .storage
+      const { error: upErr } = await supabase.storage
         .from('media')
         .upload(path, file, { upsert: true })
 
@@ -82,8 +107,8 @@ export default function Create(){
         species_text: speciesText.trim(),
         technique_text: techniqueText.trim(),
         bait_kind: baitKind,
-        bait_name: baitName.trim(),
-        bait_color: baitKind === 'artificial' ? baitColor.trim() : null,
+        bait_name: baitName.trim() || null,
+        bait_color: baitKind === 'artificial' ? (baitColor.trim() || null) : null,
         spot_area: spotArea.trim() || null,
         spot_privacy: spotArea.trim() ? spotPrivacy : 'private',
       })
@@ -98,7 +123,6 @@ export default function Create(){
       setBaitColor('')
       setSpotArea('')
     }catch(err){
-      // cleanup se ha creato il post ma poi fallisce qualcosa dopo
       if(postId){
         try{
           await supabase.from('posts').delete().eq('id', postId)
@@ -213,11 +237,6 @@ export default function Create(){
               <button className="btn primary" disabled={!ok || busy} onClick={publish}>
                 {busy ? 'Pubblico…' : 'Pubblica'}
               </button>
-
-              {/* mini debug utile: puoi toglierlo */}
-              <div style={{color:'var(--muted)', fontSize:12}}>
-                Sessione: {user?.id ? 'OK' : '—'}
-              </div>
             </div>
           </div>
         </div>
