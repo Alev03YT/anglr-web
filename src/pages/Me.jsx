@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Topbar from '../components/Topbar.jsx'
@@ -75,13 +74,24 @@ export default function Me(){
               {myPosts.map(p=>{
                 const m = p.post_media?.[0]
                 return (
-                  <div key={p.id} style={{borderRadius:14, overflow:'hidden', border:'1px solid rgba(230,241,243,.08)', background:'rgba(0,0,0,.16)', aspectRatio:'1/1'}}>
+                  <Link
+                    key={p.id}
+                    to={`/p/${p.id}`}
+                    style={{
+                      borderRadius:14,
+                      overflow:'hidden',
+                      border:'1px solid rgba(230,241,243,.08)',
+                      background:'rgba(0,0,0,.16)',
+                      aspectRatio:'1/1',
+                      display:'block'
+                    }}
+                  >
                     {m?.media_type === 'video' ? (
                       <video src={m.url} muted playsInline style={{width:'100%', height:'100%', objectFit:'cover'}} />
                     ) : (
                       <img src={m?.url} alt="" loading="lazy" style={{width:'100%', height:'100%', objectFit:'cover', display:'block'}} />
                     )}
-                  </div>
+                  </Link>
                 )
               })}
             </div>
