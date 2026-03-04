@@ -1,3 +1,4 @@
+import PostPage from './pages/PostPage.jsx'
 import { Routes, Route } from 'react-router-dom'
 import AuthProvider from './components/AuthProvider.jsx'
 import RequireAuth from './components/RequireAuth.jsx'
@@ -22,6 +23,7 @@ export default function App(){
         <Route path="/wiki" element={<RequireAuth><Wiki/></RequireAuth>} />
         <Route path="/me" element={<RequireAuth><Me/></RequireAuth>} />
         <Route path="/u/:username" element={<RequireAuth><Profile/></RequireAuth>} />
+        <Route path="/p/:id" element={<RequireAuth><PostPage/></RequireAuth>} />
       </Routes>
       <Tabs/>
     </AuthProvider>
