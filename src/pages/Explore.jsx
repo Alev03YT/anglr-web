@@ -13,32 +13,38 @@ export default function Explore(){
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
 
+  // DEBUG
+  const [postsErrMsg, setPostsErrMsg] = useState('')
+  const [fishErrMsg, setFishErrMsg] = useState('')
+
   useEffect(()=>{
     let cancelled = false
 
     ;(async()=>{
       setLoading(true)
+      setPostsErrMsg('')
+      setFishErrMsg('')
 
-      // 1) Carico posts + profilo + media (SENZA post_fishing embedded)
+      // 1) posts (senza embed)
       const { data: postsData, error: postsErr } = await supabase
         .from('posts')
-        .select(`
-          id, user_id, caption, created_at, visibility,
-          profiles:profiles(username, avatar_url),
-          post_media:post_media(url, media_type, sort_order)
-        `)
+        .select('id, user_id, caption, created_at, visibility')
         .order('created_at', { ascending: false })
         .limit(30)
 
       if(cancelled) return
-      if(postsErr) console.warn(postsErr)
 
-      const base = (postsData ?? []).map(p=>({
-        ...p,
-        post_media: (p.post_media ?? []).sort((a,b)=>(a.sort_order??0)-(b.sort_order??0)),
-      }))
+      if(postsErr){
+        console.warn(postsErr)
+        setPostsErrMsg(`${postsErr.code ?? ''} ${postsErr.message ?? 'Errore posts'}`.trim())
+        setPosts([])
+        setLoading(false)
+        return
+      }
 
-      // 2) Carico post_fishing separatamente e lo attacco ai post
+      const base = (postsData ?? [])
+
+      // 2) fishing
       const ids = base.map(p=>p.id)
       const fishingMap = new Map()
 
@@ -48,14 +54,43 @@ export default function Explore(){
           .select('post_id, environment, technique_text, species_text, bait_kind, bait_color, bait_name, spot_area, spot_privacy')
           .in('post_id', ids)
 
-        if(fishErr) console.warn(fishErr)
-        ;(fishingRows ?? []).forEach(r => fishingMap.set(r.post_id, r))
+        if(fishErr){
+          console.warn(fishErr)
+          setFishErrMsg(`${fishErr.code ?? ''} ${fishErr.message ?? 'Errore post_fishing'}`.trim())
+        }else{
+          ;(fishingRows ?? []).forEach(r => fishingMap.set(r.post_id, r))
+        }
       }
+
+      // 3) profili + media (opzionale)
+      // così non rischiamo che un embed rotto “sparisca” tutto
+      const userIds = [...new Set(base.map(p=>p.user_id).filter(Boolean))]
+      const profilesMap = new Map()
+      if(userIds.length){
+        const { data: profRows } = await supabase
+          .from('profiles')
+          .select('id, username, avatar_url')
+          .in('id', userIds)
+        ;(profRows ?? []).forEach(r => profilesMap.set(r.id, r))
+      }
+
+      const { data: mediaRows } = await supabase
+        .from('post_media')
+        .select('post_id, url, media_type, sort_order')
+        .in('post_id', ids)
+
+      const mediaMap = new Map()
+      ;(mediaRows ?? []).forEach(m=>{
+        const arr = mediaMap.get(m.post_id) ?? []
+        arr.push(m)
+        mediaMap.set(m.post_id, arr)
+      })
 
       const merged = base.map(p=>({
         ...p,
-        // OGGETTO o null (non array)
-        post_fishing: fishingMap.get(p.id) ?? null
+        post_fishing: fishingMap.get(p.id) ?? null,
+        profiles: profilesMap.get(p.user_id) ?? null,
+        post_media: (mediaMap.get(p.id) ?? []).sort((a,b)=>(a.sort_order??0)-(b.sort_order??0)),
       }))
 
       setPosts(merged)
@@ -69,7 +104,6 @@ export default function Explore(){
     const qq = safeLower(q)
 
     return posts.filter(p=>{
-      // adesso è un OGGETTO
       const f = p.post_fishing
 
       if(env && (f?.environment ?? '') !== env) return false
@@ -98,13 +132,7 @@ export default function Explore(){
         <div className="card">
           <div style={{padding:14}}>
             <div className="row" style={{gap:10, flexWrap:'wrap'}}>
-              <input
-                className="input"
-                style={{flex:1, minWidth:180}}
-                placeholder="Cerca specie, tecnica, esca, zona…"
-                value={q}
-                onChange={e=>setQ(e.target.value)}
-              />
+              <input className="input" style={{flex:1, minWidth:180}} placeholder="Cerca specie, tecnica, esca, zona…" value={q} onChange={e=>setQ(e.target.value)} />
               <select className="input" style={{width:140}} value={env} onChange={e=>setEnv(e.target.value)}>
                 <option value="">Ambiente</option>
                 <option value="salt">Mare</option>
@@ -117,12 +145,18 @@ export default function Explore(){
               </select>
             </div>
 
-            {/* Debug: tienilo 1 minuto per capire se i fishing arrivano, poi puoi toglierlo */}
             <div className="row" style={{gap:8, marginTop:10, flexWrap:'wrap'}}>
               <span className="pill">Post: {posts.length}</span>
               <span className="pill">Con scheda pesca: {posts.filter(p=>p.post_fishing).length}</span>
               <span className="pill">Risultati: {filtered.length}</span>
             </div>
+
+            {(postsErrMsg || fishErrMsg) ? (
+              <div style={{marginTop:10, color:'#ffb4b4', fontSize:13, lineHeight:1.4}}>
+                {postsErrMsg ? <div><b>ERRORE POSTS:</b> {postsErrMsg}</div> : null}
+                {fishErrMsg ? <div><b>ERRORE POST_FISHING:</b> {fishErrMsg}</div> : null}
+              </div>
+            ) : null}
           </div>
         </div>
 
