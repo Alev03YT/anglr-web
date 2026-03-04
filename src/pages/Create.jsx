@@ -30,6 +30,7 @@ export default function Create(){
   async function publish(){
     if(!ok) return alert('Mancano campi obbligatori: foto, specie, tecnica.')
     setBusy(true)
+    let postId = null
     try{
       const { data: postData, error: e1 } = await supabase
         .from('posts')
@@ -37,7 +38,7 @@ export default function Create(){
         .select('id')
         .single()
       if(e1) throw e1
-      const postId = postData.id
+      postId = postData.id
 
       const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()
       const path = `media/${user.id}/${postId}/${Date.now()}.${ext}`
@@ -70,6 +71,13 @@ export default function Create(){
       alert('Post pubblicato ✅')
       setFile(null); setCaption(''); setSpeciesText(''); setTechniqueText(''); setBaitName(''); setBaitColor(''); setSpotArea('')
     }catch(err){
+      if (postId) {
+  try {
+    await supabase.from('posts').delete().eq('id', postId)
+  } catch (e) {
+    console.warn('Cleanup delete failed', e)
+  }
+}
       alert(err.message || String(err))
     }finally{
       setBusy(false)
