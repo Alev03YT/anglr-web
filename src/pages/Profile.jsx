@@ -19,13 +19,24 @@ export default function Profile(){
   useEffect(()=>{
     let cancelled = false
     ;(async()=>{
-      const { data: p, error } = await supabase.from('profiles')
-        .select('id, username, display_name, avatar_url, bio')
-        .eq('username', username)
-        .single()
-      if(error){ console.warn(error); return }
-      if(cancelled) return
-      setProfile(p)
+      const { data: p, error } = await supabase
+  .from('profiles')
+  .select('id, username, display_name, avatar_url, bio')
+  .eq('username', username)
+  .maybeSingle()
+
+if (error) {
+  console.warn(error)
+  if (!cancelled) setProfile(null)
+  return
+}
+
+if (!p) {
+  if (!cancelled) setProfile(null)
+  return
+}
+
+if (!cancelled) setProfile(p)
 
       const [followers, followingCount, postsCount] = await Promise.all([
         supabase.from('follows').select('*', {count:'exact', head:true}).eq('following_id', p.id),
