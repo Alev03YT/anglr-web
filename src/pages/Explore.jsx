@@ -41,40 +41,28 @@ export default function Explore(){
   }, [])
 
   const filtered = useMemo(()=>{
-    const qq = safeLower(q)
-    return posts.filter(p=>{
-      const f = p.post_fishing?.[0]
-      const envDB = safeLower(f?.environment)
-const baitDB = safeLower(f?.bait_kind)
+  const qq = safeLower(q)
+  return posts.filter(p=>{
+    const f = Array.isArray(p.post_fishing) ? p.post_fishing[0] : p.post_fishing
 
-// env: accetta sia codici (fresh/salt) sia parole (interno/mare)
-if(env){
-  const okEnv =
-    (env === 'fresh' && (envDB.includes('fresh') || envDB.includes('intern') || envDB.includes('acque') || envDB.includes('dolce'))) ||
-    (env === 'salt'  && (envDB.includes('salt')  || envDB.includes('mare')))
-  if(!okEnv) return false
-}
+    if(env && f?.environment !== env) return false
+    if(bait && f?.bait_kind !== bait) return false
 
-// bait: accetta sia codici (artificial/natural) sia italiano (artificiale/naturale)
-if(bait){
-  const okBait =
-    (bait === 'artificial' && (baitDB.includes('artificial') || baitDB.includes('artificiale'))) ||
-    (bait === 'natural'    && (baitDB.includes('natural')    || baitDB.includes('naturale')))
-  if(!okBait) return false
-}
-      if(!qq) return true
-      const blob = [
-  p.caption,
-  p.profiles?.username,
-  f?.species_text,
-  f?.technique_text,
-  f?.bait_name,
-  f?.bait_color,
-  f?.spot_area
-].filter(Boolean).join(' ').toLowerCase()
-      return blob.includes(qq)
-    })
-  }, [posts, q, env, bait])
+    if(!qq) return true
+
+    const blob = [
+      p.caption,
+      p.profiles?.username,
+      f?.species_text,
+      f?.technique_text,
+      f?.bait_name,
+      f?.bait_color,
+      f?.spot_area
+    ].filter(Boolean).join(' ').toLowerCase()
+
+    return blob.includes(qq)
+  })
+}, [posts, q, env, bait])
 
   return (
     <>
