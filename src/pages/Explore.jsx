@@ -44,8 +44,24 @@ export default function Explore(){
     const qq = safeLower(q)
     return posts.filter(p=>{
       const f = p.post_fishing?.[0]
-      if(env && (f?.environment ?? '') !== env) return false
-if(bait && (f?.bait_kind ?? '') !== bait) return false
+      const envDB = safeLower(f?.environment)
+const baitDB = safeLower(f?.bait_kind)
+
+// env: accetta sia codici (fresh/salt) sia parole (interno/mare)
+if(env){
+  const okEnv =
+    (env === 'fresh' && (envDB.includes('fresh') || envDB.includes('intern') || envDB.includes('acque') || envDB.includes('dolce'))) ||
+    (env === 'salt'  && (envDB.includes('salt')  || envDB.includes('mare')))
+  if(!okEnv) return false
+}
+
+// bait: accetta sia codici (artificial/natural) sia italiano (artificiale/naturale)
+if(bait){
+  const okBait =
+    (bait === 'artificial' && (baitDB.includes('artificial') || baitDB.includes('artificiale'))) ||
+    (bait === 'natural'    && (baitDB.includes('natural')    || baitDB.includes('naturale')))
+  if(!okBait) return false
+}
       if(!qq) return true
       const blob = [
   p.caption,
