@@ -10,8 +10,8 @@ export default function PostCard({post, me}){
   const [commentsOpen, setCommentsOpen] = useState(false)
   const [busy, setBusy] = useState(false)
 
-  const media = post.post_media?.[0]
-  const fishing = post.post_fishing?.[0]
+  const media = Array.isArray(post.post_media) ? post.post_media[0] : post.post_media
+const fishing = Array.isArray(post.post_fishing) ? post.post_fishing[0] : post.post_fishing
 
   const badges = useMemo(()=>{
     if(!fishing) return []
