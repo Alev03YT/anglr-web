@@ -44,13 +44,18 @@ export default function Explore(){
     const qq = safeLower(q)
     return posts.filter(p=>{
       const f = p.post_fishing?.[0]
-      if(env && f?.environment !== env) return false
-      if(bait && f?.bait_kind !== bait) return false
+      if(env && (f?.environment ?? '') !== env) return false
+if(bait && (f?.bait_kind ?? '') !== bait) return false
       if(!qq) return true
       const blob = [
-        p.caption, p.profiles?.username,
-        f?.species_text, f?.technique_text, f?.bait_name, f?.bait_color, f?.spot_area
-      ].join(' ').toLowerCase()
+  p.caption,
+  p.profiles?.username,
+  f?.species_text,
+  f?.technique_text,
+  f?.bait_name,
+  f?.bait_color,
+  f?.spot_area
+].filter(Boolean).join(' ').toLowerCase()
       return blob.includes(qq)
     })
   }, [posts, q, env, bait])
