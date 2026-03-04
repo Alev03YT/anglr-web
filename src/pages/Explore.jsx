@@ -20,11 +20,11 @@ export default function Explore(){
       const { data, error } = await supabase
         .from('posts')
         .select(`
-          id, user_id, caption, created_at,
-          profiles:profiles(username, avatar_url),
-          post_media:post_media(url, media_type, sort_order),
-          post_fishing:post_fishing(environment, bait_kind, bait_color, bait_name, spot_area, spot_privacy, species_text, technique_text)
-        `)
+  id, user_id, caption, created_at, visibility,
+  profiles:profiles(username, avatar_url),
+  post_media:post_media(url, media_type, sort_order),
+  post_fishing:post_fishing(environment, technique_text, species_text, bait_kind, bait_color, bait_name, spot_area, spot_privacy)
+`)
         .order('created_at', {ascending:false})
         .limit(30)
 
