@@ -25,7 +25,7 @@ export default function PostPage(){
           post_fishing:post_fishing(environment, bait_kind, bait_color, bait_name, spot_area, spot_privacy, species_text, technique_text)
         `)
         .eq('id', id)
-        .single()
+        .maybeSingle()
 
       if(cancelled) return
       if(error){ console.warn(error); setPost(null) }
