@@ -17,13 +17,19 @@ export default function Profile(){
   const isMe = useMemo(()=> profile?.id && profile.id === user.id, [profile?.id, user.id])
 
   useEffect(()=>{
-    let cancelled = false
-    ;(async()=>{
-      const { data: p, error } = await supabase
-  .from('profiles')
-  .select('id, username, display_name, avatar_url, bio')
-  .eq('username', username)
-  .maybeSingle()
+  let cancelled = false
+
+  setProfile(null)
+  setPosts([])
+  setCounts({followers:0, following:0, posts:0})
+  setFollowing(false)
+
+  ;(async()=>{
+    const { data: p, error } = await supabase
+      .from('profiles')
+      .select('id, username, display_name, avatar_url, bio')
+      .eq('username', username)
+      .maybeSingle()
 
 if (error) {
   console.warn(error)
