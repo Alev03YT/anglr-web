@@ -20,7 +20,10 @@ export default function Create(){
   const [spotArea, setSpotArea] = useState('')
   const [spotPrivacy, setSpotPrivacy] = useState('public_area')
 
-  const ok = useMemo(()=> !!file && !!safeLower(speciesText) && !!safeLower(techniqueText), [file, speciesText, techniqueText])
+  const ok = useMemo(
+    ()=> !!file && !!safeLower(speciesText) && !!safeLower(techniqueText),
+    [file, speciesText, techniqueText]
+  )
 
   function pick(e){
     const f = e.target.files?.[0]
@@ -28,22 +31,46 @@ export default function Create(){
   }
 
   async function publish(){
+    // ✅ FIX 1: devi essere loggato davvero
+    if(!user?.id){
+      alert('Devi essere loggato per pubblicare. Vai su Profilo → Accedi e riprova.')
+      return
+    }
+
+    // ✅ FIX 2: campi obbligatori
     if(!ok) return alert('Mancano campi obbligatori: foto, specie, tecnica.')
+
     setBusy(true)
     let postId = null
+
     try{
+      // ✅ FIX 3 (consigliato): NON passare user_id dal client.
+      // Se in Supabase hai fatto: alter table posts alter column user_id set default auth.uid();
+      // allora questo insert va benissimo.
+      // Se NON lo hai fatto, metti user_id: user.id dentro.
       const { data: postData, error: e1 } = await supabase
         .from('posts')
-        .insert({ user_id: user.id, caption: caption.trim(), visibility: 'public' })
+        .insert({
+          // user_id: user.id, // <-- sblocca questa riga SOLO se non hai il default auth.uid()
+          caption: caption.trim(),
+          visibility: 'public'
+        })
         .select('id')
         .single()
+
       if(e1) throw e1
       postId = postData.id
 
+      // Upload media
       const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()
       const path = `media/${user.id}/${postId}/${Date.now()}.${ext}`
-      const { error: upErr } = await supabase.storage.from('media').upload(path, file, { upsert: true })
+
+      const { error: upErr } = await supabase.storage
+        .from('media')
+        .upload(path, file, { upsert: true })
+
       if(upErr) throw upErr
+
       const { data: pub } = supabase.storage.from('media').getPublicUrl(path)
 
       const { error: e2 } = await supabase.from('post_media').insert({
@@ -61,24 +88,31 @@ export default function Create(){
         species_text: speciesText.trim(),
         technique_text: techniqueText.trim(),
         bait_kind: baitKind,
-        bait_name: baitName.trim(),
-        bait_color: baitKind === 'artificial' ? baitColor.trim() : null,
+        bait_name: baitName.trim() || null,
+        bait_color: baitKind === 'artificial' ? (baitColor.trim() || null) : null,
         spot_area: spotArea.trim() || null,
         spot_privacy: spotArea.trim() ? spotPrivacy : 'private',
       })
       if(e3) throw e3
 
       alert('Post pubblicato ✅')
-      setFile(null); setCaption(''); setSpeciesText(''); setTechniqueText(''); setBaitName(''); setBaitColor(''); setSpotArea('')
+      setFile(null)
+      setCaption('')
+      setSpeciesText('')
+      setTechniqueText('')
+      setBaitName('')
+      setBaitColor('')
+      setSpotArea('')
     }catch(err){
-      if (postId) {
-  try {
-    await supabase.from('posts').delete().eq('id', postId)
-  } catch (e) {
-    console.warn('Cleanup delete failed', e)
-  }
-}
-      alert(err.message || String(err))
+      // cleanup se ha creato il post ma poi fallisce qualcosa dopo
+      if(postId){
+        try{
+          await supabase.from('posts').delete().eq('id', postId)
+        }catch(e){
+          console.warn('Cleanup delete failed', e)
+        }
+      }
+      alert(err?.message || String(err))
     }finally{
       setBusy(false)
     }
