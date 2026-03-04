@@ -4,6 +4,7 @@ import { timeAgo } from '../lib/format.js'
 import CommentsModal from './CommentsModal.jsx'
 
 export default function PostCard({post, me}){
+  const isMine = me?.id && post.user_id === me.id
   const [liked, setLiked] = useState(false)
   const [likesCount, setLikesCount] = useState(post.likes_count ?? 0)
   const [commentsOpen, setCommentsOpen] = useState(false)
@@ -88,7 +89,50 @@ export default function PostCard({post, me}){
             </button>
             <button className="actionBtn" onClick={()=>setCommentsOpen(true)}>💬 Commenti</button>
           </div>
+{isMine && (
+  <div className="actions" style={{marginTop:8}}>
+    <button
+      className="actionBtn"
+      onClick={async ()=>{
+        const next = prompt('Modifica descrizione:', post.caption ?? '')
+        if(next === null) return
+        const { error } = await supabase
+          .from('posts')
+          .update({ caption: next })
+          .eq('id', post.id)
 
+        if(error) return alert(error.message)
+
+        // aggiorna UI senza ricaricare tutta la pagina
+        post.caption = next
+        alert('Descrizione aggiornata ✅')
+      }}
+      disabled={busy}
+    >
+      ✏️ Modifica
+    </button>
+
+    <button
+      className="actionBtn"
+      onClick={async ()=>{
+        if(!confirm('Eliminare questo post?')) return
+        const { error } = await supabase
+          .from('posts')
+          .delete()
+          .eq('id', post.id)
+
+        if(error) return alert(error.message)
+
+        alert('Post eliminato ✅')
+        // torna indietro (utile dalla pagina /p/:id)
+        window.history.back()
+      }}
+      disabled={busy}
+    >
+      🗑 Elimina
+    </button>
+  </div>
+)}
           {badges.length ? <div className="badgeRow">{badges.map((t,i)=>(<span key={i} className="pill">{t}</span>))}</div> : null}
 
           {post.caption ? (
