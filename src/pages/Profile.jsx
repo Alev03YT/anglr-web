@@ -3,7 +3,6 @@ import { useParams, Link } from 'react-router-dom'
 import Topbar from '../components/Topbar.jsx'
 import { useAuth } from '../components/AuthProvider.jsx'
 import { supabase } from '../lib/supabase.js'
-import PostCard from '../components/PostCard.jsx'
 
 export default function Profile(){
   const { username } = useParams()
@@ -17,38 +16,29 @@ export default function Profile(){
   const isMe = useMemo(()=> profile?.id && profile.id === user.id, [profile?.id, user.id])
 
   useEffect(()=>{
-  let cancelled = false
+    // reset quando cambio profilo (evita “flash” di vecchi dati)
+    setProfile(null)
+    setPosts([])
+    setCounts({followers:0, following:0, posts:0})
+    setFollowing(false)
 
-  setProfile(null)
-  setPosts([])
-  setCounts({followers:0, following:0, posts:0})
-  setFollowing(false)
+    let cancelled = false
+    ;(async()=>{
+      const { data: p, error } = await supabase.from('profiles')
+        .select('id, username, display_name, avatar_url, bio')
+        .eq('username', username)
+        .single()
 
-  ;(async()=>{
-    const { data: p, error } = await supabase
-      .from('profiles')
-      .select('id, username, display_name, avatar_url, bio')
-      .eq('username', username)
-      .maybeSingle()
-
-if (error) {
-  console.warn(error)
-  if (!cancelled) setProfile(null)
-  return
-}
-
-if (!p) {
-  if (!cancelled) setProfile(null)
-  return
-}
-
-if (!cancelled) setProfile(p)
+      if(error){ console.warn(error); return }
+      if(cancelled) return
+      setProfile(p)
 
       const [followers, followingCount, postsCount] = await Promise.all([
         supabase.from('follows').select('*', {count:'exact', head:true}).eq('following_id', p.id),
         supabase.from('follows').select('*', {count:'exact', head:true}).eq('follower_id', p.id),
         supabase.from('posts').select('*', {count:'exact', head:true}).eq('user_id', p.id),
       ]).then(arr=>arr.map(r=>r.count||0))
+
       if(!cancelled) setCounts({followers, following: followingCount, posts: postsCount})
 
       const { data: rel } = await supabase.from('follows')
@@ -56,23 +46,31 @@ if (!cancelled) setProfile(p)
         .eq('follower_id', user.id)
         .eq('following_id', p.id)
         .maybeSingle()
+
       if(!cancelled) setFollowing(!!rel)
 
-      const { data: feed } = await supabase
+      // ⚠️ qui prendiamo SOLO quello che serve per la griglia:
+      // id + media (prima immagine/video) + created_at
+      const { data: feed, error: feedErr } = await supabase
         .from('posts')
         .select(`
-          id, user_id, caption, created_at,
-          profiles:profiles!posts_user_id_fkey(username, avatar_url)
-          post_media:post_media(url, media_type, sort_order),
-          post_fishing:post_fishing(environment, bait_kind, bait_color, bait_name, spot_area, spot_privacy, species_text, technique_text)
+          id, created_at,
+          post_media:post_media(url, media_type, sort_order)
         `)
         .eq('user_id', p.id)
         .order('created_at', {ascending:false})
-        .limit(30)
+        .limit(60)
+
+      if(feedErr) console.warn(feedErr)
+
       if(!cancelled){
-        setPosts((feed ?? []).map(x=>({...x, post_media:(x.post_media??[]).sort((a,b)=>(a.sort_order??0)-(b.sort_order??0))})))
+        setPosts((feed ?? []).map(x=>({
+          ...x,
+          post_media: (x.post_media ?? []).sort((a,b)=>(a.sort_order??0)-(b.sort_order??0))
+        })))
       }
     })()
+
     return ()=>{ cancelled = true }
   }, [username, user.id])
 
@@ -142,8 +140,45 @@ if (!cancelled) setProfile(p)
             {posts.length === 0 ? (
               <div className="card"><div style={{padding:14, color:'var(--muted)'}}>Nessun post.</div></div>
             ) : (
-              <div style={{display:'grid', gap:12}}>
-                {posts.map(p=> <PostCard key={p.id} post={p} me={user} />)}
+              <div className="card">
+                <div style={{padding:12}}>
+                  <div style={{display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:8}}>
+                    {posts.map(p=>{
+                      const m = p.post_media?.[0]
+                      return (
+                        <Link
+                          key={p.id}
+                          to={`/p/${p.id}`}
+                          style={{
+                            borderRadius:14,
+                            overflow:'hidden',
+                            border:'1px solid rgba(230,241,243,.08)',
+                            background:'rgba(0,0,0,.16)',
+                            aspectRatio:'1/1',
+                            display:'block'
+                          }}
+                        >
+                          {m?.media_type === 'video' ? (
+                            <video
+                              src={m.url}
+                              muted
+                              playsInline
+                              preload="metadata"
+                              style={{width:'100%', height:'100%', objectFit:'cover', display:'block'}}
+                            />
+                          ) : (
+                            <img
+                              src={m?.url}
+                              alt=""
+                              loading="lazy"
+                              style={{width:'100%', height:'100%', objectFit:'cover', display:'block'}}
+                            />
+                          )}
+                        </Link>
+                      )
+                    })}
+                  </div>
+                </div>
               </div>
             )}
           </>
