@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { timeAgo } from '../lib/format.js'
 import CommentsModal from './CommentsModal.jsx'
 
 export default function PostCard({ post, me }){
+  const nav = useNavigate()
   const isMine = me?.id && post.user_id === me.id
 
   const [liked, setLiked] = useState(false)
@@ -15,7 +16,7 @@ export default function PostCard({ post, me }){
   // menu (⋯)
   const [menuOpen, setMenuOpen] = useState(false)
 
-  // animazione cuore
+  // cuore animato
   const [heartPop, setHeartPop] = useState(false)
   const heartTimer = useRef(null)
 
@@ -72,7 +73,6 @@ export default function PostCard({ post, me }){
           .delete()
           .eq('post_id', post.id)
           .eq('user_id', me.id)
-
         if(error) throw error
         setLiked(false)
         setLikesCount(v=>Math.max(0, v-1))
@@ -81,7 +81,7 @@ export default function PostCard({ post, me }){
           .from('post_likes')
           .insert({ post_id: post.id, user_id: me.id })
 
-        // se è già like, alcuni DB danno errore di duplicate: ignoralo
+        // se già esiste, ignora
         if(error && !String(error.message || '').toLowerCase().includes('duplicate')) throw error
 
         if(!liked) setLikesCount(v=>v+1)
@@ -95,16 +95,27 @@ export default function PostCard({ post, me }){
     }
   }
 
-  // Double tap (mobile) + double click (desktop)
+  // ✅ IG behavior: 1 tap apre post, double tap mette like
   const lastTapRef = useRef(0)
+  const singleTapTimer = useRef(null)
+
   function onMediaTap(){
     const now = Date.now()
     const diff = now - lastTapRef.current
     lastTapRef.current = now
+
+    // Double tap
     if(diff > 0 && diff < 280){
-      // double tap
+      if(singleTapTimer.current) clearTimeout(singleTapTimer.current)
       toggleLike({ forceOn: true })
+      return
     }
+
+    // Single tap (aspetta un attimo per capire se arriva il secondo tap)
+    if(singleTapTimer.current) clearTimeout(singleTapTimer.current)
+    singleTapTimer.current = setTimeout(()=>{
+      nav(`/p/${post.id}`)
+    }, 260)
   }
 
   async function editCaption(){
@@ -115,9 +126,7 @@ export default function PostCard({ post, me }){
       .from('posts')
       .update({ caption: next })
       .eq('id', post.id)
-
     if(error) return alert(error.message)
-
     post.caption = next
     setMenuOpen(false)
     alert('Descrizione aggiornata ✅')
@@ -126,14 +135,11 @@ export default function PostCard({ post, me }){
   async function deletePost(){
     if(!isMine) return
     if(!confirm('Eliminare questo post?')) return
-
     const { error } = await supabase
       .from('posts')
       .delete()
       .eq('id', post.id)
-
     if(error) return alert(error.message)
-
     setMenuOpen(false)
     alert('Post eliminato ✅')
     window.history.back()
@@ -145,11 +151,7 @@ export default function PostCard({ post, me }){
         {/* Header */}
         <div className="row spread" style={{padding:'12px 12px 10px'}}>
           {profileHref ? (
-            <Link
-              to={profileHref}
-              className="row"
-              style={{gap:10, textDecoration:'none', color:'inherit'}}
-            >
+            <Link to={profileHref} className="row" style={{gap:10}}>
               <div className="avatar" style={{width:36, height:36, borderRadius:14}}>
                 {post.profiles?.avatar_url ? <img src={post.profiles.avatar_url} alt="" /> : null}
               </div>
@@ -171,17 +173,10 @@ export default function PostCard({ post, me }){
           <div className="row" style={{gap:8}}>
             <div className="pill">{likesCount} ❤️</div>
 
-            {/* Menu ⋯ */}
+            {/* ⋯ SOLO se tuo */}
             {isMine ? (
               <div className="moreWrap">
-                <button
-                  className="moreBtn"
-                  onClick={()=>setMenuOpen(v=>!v)}
-                  aria-label="Menu post"
-                >
-                  ⋯
-                </button>
-
+                <button className="moreBtn" onClick={()=>setMenuOpen(v=>!v)} aria-label="Menu post">⋯</button>
                 {menuOpen ? (
                   <div className="moreMenu">
                     <button className="moreItem" onClick={editCaption}>✏️ Modifica</button>
@@ -193,24 +188,13 @@ export default function PostCard({ post, me }){
           </div>
         </div>
 
-        {/* Media (double tap like + heart pop) */}
-        <div
-          className="postMedia postMediaTap"
-          onClick={onMediaTap}
-          onDoubleClick={()=>toggleLike({ forceOn: true })}
-          role="button"
-          tabIndex={0}
-        >
+        {/* Media (tap/double-tap) */}
+        <div className="postMedia postMediaTap" onClick={onMediaTap} role="button" tabIndex={0}>
           {media?.media_type === 'video'
             ? <video src={media.url} controls playsInline />
             : <img src={media?.url} alt="" loading="lazy" />
           }
-
-          {/* cuore animato */}
           <div className={`heartBurst ${heartPop ? 'show' : ''}`}>❤️</div>
-
-          {/* apre post */}
-          <Link to={`/p/${post.id}`} className="openPostHit" aria-label="Apri post" />
         </div>
 
         {/* Body */}
@@ -229,7 +213,7 @@ export default function PostCard({ post, me }){
           ) : null}
 
           {post.caption ? (
-            <div style={{marginTop:10, lineHeight:1.55}}>
+            <div style={{marginTop:10}}>
               <span style={{color:'var(--muted)'}}>@{username ?? 'utente'}</span>{' '}
               {post.caption}
             </div>
