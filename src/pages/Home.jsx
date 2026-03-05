@@ -115,7 +115,17 @@ export default function Home(){
         ) : null}
 
         {loading ? (
-          <div className="card"><div style={{padding:14}}>Caricamento feed…</div></div>
+          <div style={{display:'grid', gap:12}}>
+  {[1,2,3].map(i=>(
+    <div key={i} className="card">
+      <div style={{padding:12}}>
+        <div className="skeleton" style={{height:20, width:120, marginBottom:10}}/>
+        <div className="skeleton" style={{height:320}}/>
+        <div className="skeleton" style={{height:20, width:180, marginTop:10}}/>
+      </div>
+    </div>
+  ))}
+</div>
         ) : posts.length === 0 ? (
           <div className="card"><div style={{padding:14}}>
             <b>Feed vuoto</b>
