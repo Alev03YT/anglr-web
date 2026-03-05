@@ -147,34 +147,30 @@ export default function Profile(){
                       const m = p.post_media?.[0]
                       return (
                         <Link
-                          key={p.id}
-                          to={`/p/${p.id}`}
-                          style={{
-                            borderRadius:14,
-                            overflow:'hidden',
-                            border:'1px solid rgba(230,241,243,.08)',
-                            background:'rgba(0,0,0,.16)',
-                            aspectRatio:'1/1',
-                            display:'block'
-                          }}
-                        >
-                          {m?.media_type === 'video' ? (
-                            <video
-                              src={m.url}
-                              muted
-                              playsInline
-                              preload="metadata"
-                              style={{width:'100%', height:'100%', objectFit:'cover', display:'block'}}
-                            />
-                          ) : (
-                            <img
-                              src={m?.url}
-                              alt=""
-                              loading="lazy"
-                              style={{width:'100%', height:'100%', objectFit:'cover', display:'block'}}
-                            />
-                          )}
-                        </Link>
+  key={p.id}
+  to={`/p/${p.id}`}
+  className="igTile"
+>
+  {m?.media_type === 'video' ? (
+    <video
+      src={m.url}
+      muted
+      playsInline
+      preload="metadata"
+    />
+  ) : (
+    <img
+      src={m?.url}
+      alt=""
+      loading="lazy"
+    />
+  )}
+
+  {/* badge tipo Instagram */}
+  {m?.media_type === 'video' && (
+    <div className="igTileBadge">🎬</div>
+  )}
+</Link>
                       )
                     })}
                   </div>
