@@ -189,7 +189,13 @@ export default function PostCard({ post, me }){
         </div>
 
         {/* Media (tap/double-tap) */}
-        <div className="postMedia postMediaTap" onClick={onMediaTap} role="button" tabIndex={0}>
+        <div
+  className="postMedia postMediaTap"
+  onTouchEnd={(e)=>{ e.preventDefault(); onMediaTap() }}
+  onPointerUp={onMediaTap}
+  role="button"
+  tabIndex={0}
+>
           {media?.media_type === 'video'
             ? <video src={media.url} controls playsInline />
             : <img src={media?.url} alt="" loading="lazy" />
