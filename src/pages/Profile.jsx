@@ -62,7 +62,7 @@ if (!cancelled) setProfile(p)
         .from('posts')
         .select(`
           id, user_id, caption, created_at,
-          profiles:profiles(username, avatar_url),
+          profiles:profiles!posts_user_id_fkey(username, avatar_url)
           post_media:post_media(url, media_type, sort_order),
           post_fishing:post_fishing(environment, bait_kind, bait_color, bait_name, spot_area, spot_privacy, species_text, technique_text)
         `)
