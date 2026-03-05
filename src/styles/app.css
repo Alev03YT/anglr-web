@@ -272,3 +272,81 @@ textarea{min-height: 100px; resize: vertical}
   background: rgba(0,0,0,.35);
   backdrop-filter: blur(10px);
 }
+/* ===== PostCard IG upgrades ===== */
+.postMediaTap{
+  position: relative;
+  cursor: pointer;
+}
+
+/* link invisibile per aprire il post senza coprire i bottoni */
+.openPostHit{
+  position:absolute;
+  inset:0;
+}
+
+/* cuore pop */
+.heartBurst{
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform: translate(-50%, -50%) scale(.5);
+  font-size: 64px;
+  opacity: 0;
+  pointer-events:none;
+  filter: drop-shadow(0 14px 40px rgba(0,0,0,.55));
+  transition: opacity .12s ease, transform .18s ease;
+}
+.heartBurst.show{
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+@keyframes heartFade {
+  0%{ opacity: 0; transform: translate(-50%, -50%) scale(.5); }
+  20%{ opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100%{ opacity: 0; transform: translate(-50%, -50%) scale(1.08); }
+}
+.heartBurst.show{ animation: heartFade .55s ease both; }
+
+/* menu ⋯ */
+.moreWrap{
+  position: relative;
+}
+.moreBtn{
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid rgba(230,241,243,.12);
+  background: rgba(0,0,0,.16);
+  color: rgba(230,241,243,.9);
+  font-weight: 900;
+  font-size: 18px;
+  display:grid;
+  place-items:center;
+}
+.moreBtn:active{ transform: scale(.98); }
+
+.moreMenu{
+  position: absolute;
+  right: 0;
+  top: 44px;
+  min-width: 170px;
+  border-radius: 16px;
+  border: 1px solid rgba(230,241,243,.12);
+  background: rgba(8,18,20,.92);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 18px 60px rgba(0,0,0,.55);
+  overflow: hidden;
+  z-index: 10;
+}
+.moreItem{
+  width: 100%;
+  text-align: left;
+  padding: 12px 12px;
+  border: 0;
+  background: transparent;
+  color: rgba(230,241,243,.92);
+  font-weight: 900;
+  cursor: pointer;
+}
+.moreItem:hover{ background: rgba(255,255,255,.06); }
+.moreItem.danger{ color: #ffb4b4; }
