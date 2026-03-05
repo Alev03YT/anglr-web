@@ -154,3 +154,121 @@ textarea{min-height: 100px; resize: vertical}
   overflow:auto;
 }
 .modalPad{padding: 14px}
+/* ===== ANGLR polish pack (append-only) ===== */
+
+/* 1) qualità generale */
+:root{
+  --border2: 1px solid rgba(230,241,243,.16);
+  --shadow2: 0 18px 60px rgba(0,0,0,.55);
+}
+
+.card{
+  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)), var(--panel);
+  box-shadow: var(--shadow2);
+}
+
+/* 2) bottoni: hover/active più “app” */
+.btn, .actionBtn, .tab{
+  transition: transform .08s ease, border-color .15s ease, background .15s ease, opacity .15s ease;
+}
+
+.btn:hover{ border-color: rgba(230,241,243,.18); background: rgba(13,28,31,.72); }
+.btn:active{ transform: scale(.98); }
+.btn.primary:hover{
+  border-color: rgba(31,111,120,.70);
+  filter: saturate(1.05);
+}
+
+.actionBtn:hover{ border-color: rgba(230,241,243,.18); background: rgba(255,255,255,.05); }
+.actionBtn:active{ transform: scale(.98); }
+.actionBtn:disabled, .btn:disabled{ opacity:.55; cursor:not-allowed; }
+
+/* 3) input focus più chiaro */
+.input:focus, textarea:focus, select:focus{
+  border-color: rgba(31,111,120,.65);
+  background: rgba(0,0,0,.24);
+}
+
+/* 4) tab più “touch friendly” */
+.tab:hover{
+  border-color: rgba(230,241,243,.14);
+  background: rgba(13,28,31,.50);
+}
+.tab:active{ transform: scale(.98); }
+
+/* 5) media: evita area “vuota” brutta quando manca immagine */
+.postMedia{
+  position: relative;
+}
+.postMedia::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:
+    radial-gradient(600px 300px at 30% 20%, rgba(31,111,120,.22), transparent 55%),
+    radial-gradient(600px 300px at 70% 60%, rgba(201,166,107,.10), transparent 60%);
+  pointer-events:none;
+  opacity:.9;
+}
+
+/* 6) testo: miglior leggibilità caption */
+.postBody{
+  line-height: 1.55;
+}
+
+/* 7) piccola animazione “fade in” */
+@keyframes fadeUp {
+  from { opacity:0; transform: translateY(6px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+.card{ animation: fadeUp .18s ease both; }
+
+/* 8) Skeleton utility (per loading carino) */
+.skeleton{
+  background: linear-gradient(90deg,
+    rgba(255,255,255,.06),
+    rgba(255,255,255,.11),
+    rgba(255,255,255,.06)
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.15s ease-in-out infinite;
+  border-radius: 14px;
+  border: 1px solid rgba(230,241,243,.08);
+}
+@keyframes shimmer{
+  0%{ background-position: 200% 0; }
+  100%{ background-position: -200% 0; }
+}
+
+/* 9) Griglia “Instagram” per profilo */
+.igGrid{
+  display:grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.igTile{
+  border-radius: 16px;
+  overflow:hidden;
+  border: 1px solid rgba(230,241,243,.08);
+  background: rgba(0,0,0,.16);
+  aspect-ratio: 1 / 1;
+  position: relative;
+}
+.igTile img, .igTile video{
+  width:100%;
+  height:100%;
+  object-fit: cover;
+  display:block;
+}
+.igTileBadge{
+  position:absolute;
+  right:8px;
+  top:8px;
+  padding:6px 8px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:900;
+  border: 1px solid rgba(230,241,243,.12);
+  background: rgba(0,0,0,.35);
+  backdrop-filter: blur(10px);
+}
