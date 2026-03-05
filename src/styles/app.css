@@ -277,12 +277,18 @@ textarea{min-height: 100px; resize: vertical}
   position: relative;
   cursor: pointer;
 }
-
-/* link invisibile per aprire il post senza coprire i bottoni */
-.openPostHit{
-  position:absolute;
-  inset:0;
+.postMediaTap{
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
 }
+
+.postMediaTap img,
+.postMediaTap video{
+  pointer-events: none; /* il tap va al container */
+}
+/* link invisibile per aprire il post senza coprire i bottoni */
+.openPostHit{ display:none; }
 
 /* cuore pop */
 .heartBurst{
