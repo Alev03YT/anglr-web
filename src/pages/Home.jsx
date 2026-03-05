@@ -15,79 +15,66 @@ export default function Home(){
     async function loadFeed(){
       setLoading(true)
 
-      // 1) Prendo chi seguo
-      const { data: fData, error: fErr } = await supabase
+      // 1️⃣ prendo chi seguo
+      const { data: follows } = await supabase
         .from('follows')
         .select('following_id')
         .eq('follower_id', user.id)
 
-      if (fErr) console.warn('follows error:', fErr)
+      const followingIds = (follows ?? []).map(f => f.following_id)
 
-      const followingIds = (fData ?? [])
-        .map(x => x.following_id)
-        .filter(Boolean)
+      // 2️⃣ aggiungo anche i miei post
+      const ids = [user.id, ...followingIds]
 
-      // 2) Creo lista utenti del feed: io + seguiti
-      const idList = Array.from(new Set([user.id, ...followingIds]))
+      let query = supabase
+        .from('posts')
+        .select(`
+          id, user_id, caption, created_at,
+          profiles:profiles(username, avatar_url),
+          post_media:post_media(url, media_type, sort_order),
+          post_fishing:post_fishing(environment, bait_kind, bait_color, bait_name, spot_area, spot_privacy, species_text, technique_text)
+        `)
+        .order('created_at', {ascending:false})
+        .limit(30)
 
-      // 3) Provo a caricare feed (io + seguiti)
-      let feed = []
-      let feedErr = null
+      // 3️⃣ filtro utenti seguiti
+      if(ids.length > 0){
+        query = query.in('user_id', ids)
+      }
 
-      if (idList.length > 0){
-        const res = await supabase
+      const { data, error } = await query
+
+      if(error) console.warn(error)
+
+      let feed = data ?? []
+
+      // 4️⃣ fallback: se feed vuoto mostra ultimi post pubblici
+      if(feed.length === 0){
+        const { data: explore } = await supabase
           .from('posts')
           .select(`
-            id, user_id, caption, created_at, visibility,
+            id, user_id, caption, created_at,
             profiles:profiles(username, avatar_url),
             post_media:post_media(url, media_type, sort_order),
             post_fishing:post_fishing(environment, bait_kind, bait_color, bait_name, spot_area, spot_privacy, species_text, technique_text)
           `)
-          .in('user_id', idList)
-          // se hai policy "solo public", questa riga aiuta a non perdere i tuoi post privati
-          .or(`visibility.eq.public,user_id.eq.${user.id}`)
-          .order('created_at', { ascending: false })
+          .order('created_at', {ascending:false})
           .limit(30)
 
-        feed = res.data ?? []
-        feedErr = res.error ?? null
+        feed = explore ?? []
       }
 
-      if (feedErr) console.warn('feed error:', feedErr)
-
-      // 4) Fallback: se feed vuoto, mostra ultimi post pubblici (tipo "per te")
-      if (!feed || feed.length === 0){
-        const res2 = await supabase
-          .from('posts')
-          .select(`
-            id, user_id, caption, created_at, visibility,
-            profiles:profiles(username, avatar_url),
-            post_media:post_media(url, media_type, sort_order),
-            post_fishing:post_fishing(environment, bait_kind, bait_color, bait_name, spot_area, spot_privacy, species_text, technique_text)
-          `)
-          .eq('visibility', 'public')
-          .order('created_at', { ascending: false })
-          .limit(30)
-
-        if (res2.error) console.warn('fallback error:', res2.error)
-        feed = res2.data ?? []
-      }
-
-      // 5) Normalizzo media/ fishing e setto UI
-      const normalized = (feed ?? []).map(p => ({
-        ...p,
-        post_media: (Array.isArray(p.post_media) ? p.post_media : (p.post_media ? [p.post_media] : []))
-          .sort((a,b)=>(a.sort_order ?? 0) - (b.sort_order ?? 0)),
-        post_fishing: Array.isArray(p.post_fishing) ? p.post_fishing : (p.post_fishing ? [p.post_fishing] : []),
-      }))
-
-      if (!cancelled){
-        setPosts(normalized)
+      if(!cancelled){
+        setPosts(feed.map(p=>({
+          ...p,
+          post_media: (p.post_media ?? []).sort((a,b)=>(a.sort_order??0)-(b.sort_order??0)),
+        })))
         setLoading(false)
       }
     }
 
     loadFeed()
+
     return ()=>{ cancelled = true }
   }, [user.id])
 
@@ -101,7 +88,7 @@ export default function Home(){
           <div className="card"><div style={{padding:14}}>
             <b>Feed vuoto</b>
             <div style={{color:'var(--muted)', marginTop:6}}>
-              Non ci sono post da mostrare. Prova a pubblicare oppure vai su “Esplora”.
+              Segui qualcuno oppure pubblica il tuo primo post.
             </div>
           </div></div>
         ) : (
