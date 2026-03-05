@@ -105,7 +105,7 @@ export default function PostCard({ post, me }){
     lastTapRef.current = now
 
     // Double tap
-    if(diff > 0 && diff < 280){
+    if(diff > 0 && diff < 320){
       if(singleTapTimer.current) clearTimeout(singleTapTimer.current)
       toggleLike({ forceOn: true })
       return
@@ -115,7 +115,7 @@ export default function PostCard({ post, me }){
     if(singleTapTimer.current) clearTimeout(singleTapTimer.current)
     singleTapTimer.current = setTimeout(()=>{
       nav(`/p/${post.id}`)
-    }, 260)
+    }, 420)
   }
 
   async function editCaption(){
@@ -191,7 +191,6 @@ export default function PostCard({ post, me }){
         {/* Media (tap/double-tap) */}
         <div
   className="postMedia postMediaTap"
-  onTouchEnd={(e)=>{ e.preventDefault(); onMediaTap() }}
   onPointerUp={onMediaTap}
   role="button"
   tabIndex={0}
