@@ -44,6 +44,13 @@ export default function Explore(){
 
       const base = (postsData ?? [])
 
+      // ✅ FIX 2: se non ci sono post, stop
+      if(!base.length){
+        setPosts([])
+        setLoading(false)
+        return
+      }
+
       // 2) fishing
       const ids = base.map(p=>p.id)
       const fishingMap = new Map()
@@ -63,7 +70,6 @@ export default function Explore(){
       }
 
       // 3) profili + media (opzionale)
-      // così non rischiamo che un embed rotto “sparisca” tutto
       const userIds = [...new Set(base.map(p=>p.user_id).filter(Boolean))]
       const profilesMap = new Map()
       if(userIds.length){
@@ -106,8 +112,12 @@ export default function Explore(){
     return posts.filter(p=>{
       const f = p.post_fishing
 
-      if(env && (f?.environment ?? '') !== env) return false
-      if(bait && (f?.bait_kind ?? '') !== bait) return false
+      // ✅ FIX 1: normalizza valori dal DB (spazi/maiuscole)
+      const envDb = safeLower(f?.environment).trim()
+      const baitDb = safeLower(f?.bait_kind).trim()
+
+      if(env && envDb !== env) return false
+      if(bait && baitDb !== bait) return false
 
       if(!qq) return true
 
