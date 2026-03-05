@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { timeAgo } from '../lib/format.js'
 import CommentsModal from './CommentsModal.jsx'
+import { Link } from 'react-router-dom'
 
 export default function PostCard({post, me}){
   const isMine = me?.id && post.user_id === me.id
@@ -10,6 +11,8 @@ export default function PostCard({post, me}){
   const [commentsOpen, setCommentsOpen] = useState(false)
   const [busy, setBusy] = useState(false)
 
+  const username = post?.profiles?.username || null
+const profileHref = username ? `/u/${encodeURIComponent(username)}` : null
   const media = Array.isArray(post.post_media) ? post.post_media[0] : post.post_media
 const fishing = Array.isArray(post.post_fishing) ? post.post_fishing[0] : post.post_fishing
 
@@ -66,17 +69,32 @@ const fishing = Array.isArray(post.post_fishing) ? post.post_fishing[0] : post.p
     <>
       <div className="card">
         <div className="row spread" style={{padding:'12px 12px 10px'}}>
-          <div className="row" style={{gap:10}}>
-            <div className="avatar" style={{width:36, height:36, borderRadius:14}}>
-              {post.profiles?.avatar_url ? <img src={post.profiles.avatar_url} alt="" /> : null}
-            </div>
-            <div style={{lineHeight:1.1}}>
-              <b style={{fontSize:13}}>@{post.profiles?.username ?? 'utente'}</b>
-              <div className="muted" style={{fontSize:12}}>{timeAgo(post.created_at)}</div>
-            </div>
-          </div>
-          <div className="pill">{likesCount} ❤️</div>
-        </div>
+  {profileHref ? (
+    <Link
+      to={profileHref}
+      className="row"
+      style={{gap:10, textDecoration:'none', color:'inherit'}}
+    >
+      <div className="avatar" style={{width:36, height:36, borderRadius:14}}>
+        {post.profiles?.avatar_url ? <img src={post.profiles.avatar_url} alt="" /> : null}
+      </div>
+      <div style={{lineHeight:1.1}}>
+        <b style={{fontSize:13}}>@{username}</b>
+        <div className="muted" style={{fontSize:12}}>{timeAgo(post.created_at)}</div>
+      </div>
+    </Link>
+  ) : (
+    <div className="row" style={{gap:10}}>
+      <div className="avatar" style={{width:36, height:36, borderRadius:14}} />
+      <div style={{lineHeight:1.1}}>
+        <b style={{fontSize:13}}>@utente</b>
+        <div className="muted" style={{fontSize:12}}>{timeAgo(post.created_at)}</div>
+      </div>
+    </div>
+  )}
+
+  <div className="pill">{likesCount} ❤️</div>
+</div>
 
         <div className="postMedia">
           {media?.media_type === 'video' ? <video src={media.url} controls playsInline /> : <img src={media?.url} alt="" loading="lazy" />}
