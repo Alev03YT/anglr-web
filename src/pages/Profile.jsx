@@ -106,15 +106,49 @@ export default function Profile(){
           <div className="card"><div style={{padding:14}}>Profilo non trovato.</div></div>
         ) : (
           <>
-            <div className="card"><div style={{padding:14}}>
-              <div className="row spread">
-                <div className="row" style={{gap:12}}>
-                  <div className="avatar">{profile.avatar_url ? <img src={profile.avatar_url} alt="" /> : null}</div>
-                  <div>
-                    <div style={{fontSize:22, fontWeight:900}}>{profile.display_name || profile.username}</div>
-                    <div style={{color:'var(--muted)'}}>@{profile.username}</div>
-                  </div>
-                </div>
+            <div className="card">
+  <div style={{padding:20, textAlign:'center'}}>
+
+    <div className="avatar" style={{margin:'0 auto', width:80, height:80}}>
+      {profile.avatar_url ? <img src={profile.avatar_url} alt="" /> : null}
+    </div>
+
+    <div style={{marginTop:12, fontSize:20, fontWeight:900}}>
+      {profile.display_name || profile.username}
+    </div>
+
+    <div style={{color:'var(--muted)', marginTop:2}}>
+      @{profile.username}
+    </div>
+
+    <div className="row" style={{justifyContent:'center', gap:16, marginTop:14}}>
+      <span className="pill">{counts.posts} post</span>
+      <span className="pill">{counts.followers} follower</span>
+      <span className="pill">{counts.following} seguiti</span>
+    </div>
+
+    <div style={{marginTop:14}}>
+      {isMe ? (
+        <span className="pill">Questo sei tu</span>
+      ) : (
+        <button
+          className={`btn ${following ? '' : 'primary'}`}
+          disabled={busy}
+          onClick={toggleFollow}
+        >
+          {following ? 'Segui già' : 'Segui'}
+        </button>
+      )}
+    </div>
+
+    {profile.bio ? (
+      <div style={{marginTop:12, lineHeight:1.5}}>
+        {profile.bio}
+      </div>
+    ) : null}
+
+  </div>
+</div>
 
                 {isMe ? (
                   <span className="pill">Questo sei tu</span>
