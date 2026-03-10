@@ -370,3 +370,13 @@ textarea{min-height: 100px; resize: vertical}
 }
 .moreItem:hover{ background: rgba(255,255,255,.06); }
 .moreItem.danger{ color: #ffb4b4; }
+.tapLayer{
+  position:absolute;
+  inset:0;
+  z-index:2;
+  background:transparent;
+}
+
+.heartBurst{
+  z-index:3;
+}
