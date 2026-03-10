@@ -283,9 +283,23 @@ textarea{min-height: 100px; resize: vertical}
   user-select: none;
 }
 
+/* Lascia interattivi img/video */
 .postMediaTap img,
 .postMediaTap video{
-  pointer-events: none; /* il tap va al container */
+  pointer-events: auto;
+}
+
+/* Strato che cattura i tap (sopra la media) */
+.tapLayer{
+  position:absolute;
+  inset:0;
+  z-index: 2;
+  background: transparent;
+}
+
+/* Il cuore deve stare sopra */
+.heartBurst{
+  z-index: 3;
 }
 /* link invisibile per aprire il post senza coprire i bottoni */
 .openPostHit{ display:none; }
