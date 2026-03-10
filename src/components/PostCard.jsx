@@ -188,19 +188,23 @@ export default function PostCard({ post, me }){
           </div>
         </div>
 
-        {/* Media (tap/double-tap) */}
-        <div
-  className="postMedia postMediaTap"
-  onPointerUp={onMediaTap}
-  role="button"
-  tabIndex={0}
->
-          {media?.media_type === 'video'
-            ? <video src={media.url} controls playsInline />
-            : <img src={media?.url} alt="" loading="lazy" />
-          }
-          <div className={`heartBurst ${heartPop ? 'show' : ''}`}>❤️</div>
-        </div>
+{/* Media (tap/double-tap) */}
+<div className="postMedia postMediaTap">
+  {media?.media_type === 'video'
+    ? <video src={media.url} controls playsInline />
+    : <img src={media?.url} alt="" loading="lazy" />
+  }
+
+  {/* layer sopra che cattura i tap */}
+  <div
+    className="tapLayer"
+    onClick={onMediaTap}
+    role="button"
+    tabIndex={0}
+  />
+
+  <div className={`heartBurst ${heartPop ? 'show' : ''}`}>❤️</div>
+</div>
 
         {/* Body */}
         <div className="postBody">
